@@ -1,0 +1,10 @@
+{
+  "appId": "io.github.kenjicreate.kasniper",
+  "appName": "蚊スナイパー",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#101e2d",
+    "scrollEnabled": false
+  }
+}
