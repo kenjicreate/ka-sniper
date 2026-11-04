@@ -29,6 +29,8 @@ button:focus-visible{outline:3px solid #fff;outline-offset:3px}
 #guide{padding:12px 20px;background:#ffffff24;color:#fff}
 b{color:#e4f593}
 .me{color:#e4f593;font-weight:700}
+.sub{padding:10px 16px;font-size:13px;background:#ffffff24;color:#fff;margin:4px}
+button:disabled{opacity:.6;cursor:default}
 </style>
 </head>
 <body>
@@ -46,8 +48,9 @@ b{color:#e4f593}
       <small>安眠防衛戦</small>
       <h2 id="title">その一匹が、<br>眠らせない。</h2>
       <p id="desc">夜の部屋を飛び回る蚊を狙い撃ち。<br>ゴムを引いて、指を離すだけ。<br>最後の羽音を、止めよう。<br>次の部屋からは花瓶や電球に注意！</p>
-      <div style="margin:16px 0"><button id="guide" aria-pressed="true">説明あり ✓</button></div>
+      <div style="margin:16px 0" id="guideRow"><button id="guide" aria-pressed="true">説明あり ✓</button></div>
       <button id="start">狩りをはじめる</button>
+      <div id="shop" style="display:none;margin-top:14px"><button id="restore" class="sub">購入を復元</button><button id="toTitle" class="sub">タイトルへ</button></div>
       <p style="font-size:12px" id="foot">音を出すと羽音も楽しめます</p>
     </div>
   </div>
@@ -200,6 +203,7 @@ function begin() {
   syncGuide();
 }
 function finish(failed) {
+  normalCard();
   run.shots += shots; run.hits += hits; run.time += elapsed;
   running = false; drag = null; balls = [];
   outcome = failed ? 'fail' : 'clear';
@@ -216,6 +220,7 @@ function finish(failed) {
   setTimeout(() => { if (!running) ov.style.display = 'flex'; }, failed ? 700 : 350);
 }
 function showComplete() {
+  normalCard();
   outcome = 'complete'; bonus = false; bugs = []; sparks = [];
   $('#title').textContent = '九夜、安眠達成！';
   $('#desc').innerHTML = '端末内ランキング<br>' + rankingHTML() + '<br>草原ベスト ' + bestBonus + '匹';
@@ -227,8 +232,95 @@ $('#start').onclick = () => {
     case 'intro': case 'complete': level = 1; newRun(); begin(); break;
     case 'fail': begin(); break;
     case 'clear': if (level % 3 === 0) startBonus(); else { level++; begin(); } break;
-    case 'bonusDone': if (level === LAST_LEVEL) showComplete(); else { level++; begin(); } break;
+    case 'bonusDone':
+      if (level === LAST_LEVEL) showComplete();
+      else if (level >= FREE_LEVELS && !unlocked) showPaywall();
+      else { level++; begin(); }
+      break;
+    case 'paywall': buy(); break;
   }
+};
+
+/* ---------- 続きの解放（アプリ内課金） ---------- */
+// 第1〜3夜＋草原ボーナスは無料。第4〜9夜は買い切りで解放。
+// ブラウザ版（GitHub Pages）には課金の仕組みがないので、最初から全部遊べる。
+const FREE_LEVELS = 3, PRODUCT_ID = 'io.github.kenjicreate.kasniper.full';
+const IAP = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.NativePurchases : null;
+let unlocked = !IAP || store.get('ka-full') === '1';
+let priceText = '', buying = false;
+const INTRO = { title: $('#title').innerHTML, desc: $('#desc').innerHTML, start: $('#start').textContent, foot: $('#foot').innerHTML };
+function setUnlocked() { unlocked = true; store.set('ka-full', '1'); }
+async function refreshPurchases() {
+  if (!IAP) return;
+  try {
+    const { purchases } = await IAP.getPurchases({ productType: 'inapp' });
+    if ((purchases || []).some(p => p.productIdentifier === PRODUCT_ID && !p.revocationDate)) setUnlocked();
+  } catch (e) {}
+}
+async function loadPrice() {
+  if (!IAP) return;
+  try {
+    const { products } = await IAP.getProducts({ productIdentifiers: [PRODUCT_ID], productType: 'inapp' });
+    if (products && products[0]) priceText = products[0].priceString;
+    if (outcome === 'paywall') showPaywall();
+  } catch (e) {}
+}
+refreshPurchases(); loadPrice();
+
+function normalCard() {
+  $('#shop').style.display = 'none';
+  $('#guideRow').style.display = 'block';
+  $('#start').disabled = false;
+}
+function showPaywall(msg = '') {
+  outcome = 'paywall'; bonus = false; bugs = []; sparks = [];
+  $('#title').innerHTML = '続きの六夜へ';
+  $('#desc').innerHTML = '扇風機の風、カーテンの影、逃げる蚊、<br>そして最後の夜に待つ「親玉」。<br>一度の購入で、第4〜9夜がずっと遊べます。' +
+    (msg ? `<br><b>${msg}</b>` : '');
+  $('#start').textContent = buying ? '処理中…' : `続きを解放する${priceText ? `（${priceText}）` : ''}`;
+  $('#start').disabled = buying;
+  $('#restore').disabled = buying;
+  $('#guideRow').style.display = 'none';
+  $('#shop').style.display = 'block';
+  $('#foot').textContent = '';
+  ov.style.display = 'flex';
+}
+function showThanks() {
+  normalCard();
+  outcome = 'bonusDone';   // 「次へ」で第4夜に進む
+  $('#title').textContent = 'ありがとう！';
+  $('#desc').innerHTML = '第4〜9夜が解放されました。<br>ここからが本当の夜です。';
+  $('#start').textContent = '第4夜へ';
+  ov.style.display = 'flex';
+}
+async function buy() {
+  if (buying || !IAP) return;
+  buying = true; showPaywall();
+  let msg = '';
+  try {
+    await IAP.purchaseProduct({ productIdentifier: PRODUCT_ID, productType: 'inapp', quantity: 1 });
+    setUnlocked();
+  } catch (e) {
+    const m = String((e && e.message) || e);
+    if (!/cancel/i.test(m)) msg = '購入できませんでした。時間をおいてもう一度お試しください。';
+  }
+  buying = false;
+  if (unlocked) showThanks(); else showPaywall(msg);
+}
+$('#restore').onclick = async () => {
+  if (buying || !IAP) return;
+  buying = true; showPaywall();
+  try { await IAP.restorePurchases(); } catch (e) {}
+  await refreshPurchases();
+  buying = false;
+  if (unlocked) showThanks(); else showPaywall('復元できる購入が見つかりませんでした。');
+};
+$('#toTitle').onclick = () => {
+  if (buying) return;
+  normalCard();
+  outcome = 'intro';
+  $('#title').innerHTML = INTRO.title; $('#desc').innerHTML = INTRO.desc;
+  $('#start').textContent = INTRO.start; $('#foot').innerHTML = INTRO.foot;
 };
 
 /* ---------- 草原ボーナス ---------- */
@@ -254,6 +346,7 @@ function sweep(p) {
 function finishBonus() {
   bestBonus = Math.max(bestBonus, bonusCount);
   store.set('ka-bonus-best', String(bestBonus));
+  normalCard();
   running = false; sweeping = false; outcome = 'bonusDone';
   $('#title').textContent = '草原、すっきり！';
   $('#desc').textContent = bonusCount + '匹を電撃退治！ ベスト ' + bestBonus + '匹。';
