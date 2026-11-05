@@ -1,0 +1,9 @@
+{
+  "appId": "io.github.kenjicreate.caloriegohan",
+  "appName": "カロリーごはん帳",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#FFF7EA"
+  }
+}
