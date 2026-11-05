@@ -56,7 +56,15 @@
     const h = new Date().getHours();
     const expect = h < 10 ? 0 : h < 13 ? 0.15 : h < 17 ? 0.35 : h < 20 ? 0.5 : 0.7;
     if (eaten < goal * expect) return 'hungry';
+    if (weightDown()) return 'slim';
     return eaten > 0 ? 'happy' : 'normal';
+  }
+  // 最近、体重が減った（直近の記録が1つ前より0.3kg以上少なく、3日以内に記録）
+  function weightDown() {
+    const w = [...S.d.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
+    if (w.length < 2) return false;
+    const last = w[w.length - 1], prev = w[w.length - 2];
+    return last.kg <= prev.kg - 0.3 && last.date >= Day.add(Day.key(), -2);
   }
   const MOOD_TALK = {
     happy: ['いい感じ！', 'ちょうどいいね♪', 'ニコニコだよ'],
@@ -64,10 +72,11 @@
     full: ['お腹パンパン…', '食べすぎちゃったかも…'],
     hungry: ['お腹がグ〜って鳴ってるよ', 'そろそろ何か食べよう？'],
     weak: ['ちょっと元気が出ないな…', '痩せすぎかも。しっかり食べてね'],
+    slim: ['体重がへったね！その調子', 'からだが軽くなったよ'],
   };
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-  function charaSVG(m = mood(), type = set().chara) {
+  function charaSVG(m = mood(), type = Chara.fix(set().chara)) {
     return Chara.svg(type, { build: Chara.buildFromBMI(bmi()), mood: m });
   }
 
@@ -93,7 +102,7 @@
         <div class="row"><button class="btn-sub" data-act="font">文字を大きくする</button></div>
         <h2>いっしょに記録する<br>なかまを選んでね</h2>
         <div class="chara-pick">${Object.entries(Chara.TYPES).map(([k, t]) =>
-          `<button data-act="chara" data-v="${k}" class="${s.chara === k ? 'sel' : ''}">${Chara.svg(k, { mood: 'happy' })}<div>${t.label}</div></button>`).join('')}</div>
+          `<button data-act="chara" data-v="${k}" class="${Chara.fix(s.chara) === k ? 'sel' : ''}">${Chara.svg(k)}<div>${t.label}</div></button>`).join('')}</div>
         <button data-act="next">つぎへ</button>`;
     } else if (st === 2) {
       h += `<h1>身長と体重</h1>
@@ -373,7 +382,7 @@
       <div class="row">${fs.map(([v, l]) => `<button data-act="fs" data-v="${v}" class="${s.fontScale === v ? '' : 'btn-sub'}">${l}</button>`).join('')}</div>
       <h2>キャラクター</h2>
       <div class="chara-pick">${Object.entries(Chara.TYPES).map(([k, t]) =>
-        `<button data-act="chara" data-v="${k}" class="${s.chara === k ? 'sel' : ''}">${Chara.svg(k, { mood: 'happy' })}<div>${t.label}</div></button>`).join('')}</div>
+        `<button data-act="chara" data-v="${k}" class="${Chara.fix(s.chara) === k ? 'sel' : ''}">${Chara.svg(k)}<div>${t.label}</div></button>`).join('')}</div>
       <h2>身長</h2>
       <div class="inline-input"><input id="hIn" type="number" inputmode="decimal" value="${s.height}"><span>cm</span></div>
       <h2>1日の目標カロリー</h2>
