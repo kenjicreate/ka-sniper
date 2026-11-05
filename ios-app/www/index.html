@@ -80,8 +80,8 @@ const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && windo
 const Plugins = NATIVE ? (window.Capacitor.Plugins || {}) : {};
 const Haptics = Plugins.Haptics || null;
 const AdMob = Plugins.AdMob || null;
-// ↓ 今はGoogleのテスト用広告。AdMobで本物を作ったら、その「広告ユニットID」に差し替える
-const AD_UNIT_ID = 'ca-app-pub-3940256099942544/1712485313';
+// AdMob の広告ユニット（リワード「続ける」）
+const AD_UNIT_ID = 'ca-app-pub-9222119240854607/3821408976';
 
 // 振動：iPhoneは本体の振動機能、Androidなどのブラウザは vibrate
 function buzz(kind) {
