@@ -1,6 +1,7 @@
 // 料理ごとのカロリー目安表（「普通」1人前のおおよその値）
 // kcal: カロリー / salt: 塩分（g） / cat: 分類
 // aiy: 写真の判定データ（models/food/labels.txt）の料理名との対応
+// like: 見た目が似ていて取り違えやすい料理（写真の候補に一緒に出す）
 // ※ 数値は一般的な目安です。お店や作り方で大きく変わります。
 window.FOODS = [
   // ごはん・どんぶり
@@ -15,16 +16,18 @@ window.FOODS = [
   { id: 'unaju', name: 'うな重', kcal: 750, salt: 3.5, cat: 'ごはん', aiy: ['Unagi'] },
   { id: 'tekkadon', name: '鉄火丼・海鮮丼', kcal: 550, salt: 2.5, cat: 'ごはん', aiy: ['Tekkadon'] },
   { id: 'chahan', name: 'チャーハン', kcal: 650, salt: 3.0, cat: 'ごはん', aiy: ['Chahan', 'Fried rice'] },
+  { id: 'pilaf', name: 'ピラフ', kcal: 550, salt: 2.5, cat: 'ごはん', aiy: ['Pilaf'] },
+  { id: 'hayashi', name: 'ハヤシライス', kcal: 700, salt: 3.0, cat: 'ごはん', aiy: ['Hayashi rice'] },
   { id: 'omurice', name: 'オムライス', kcal: 750, salt: 3.0, cat: 'ごはん', aiy: ['Omurice'] },
   { id: 'bibimbap', name: 'ビビンバ', kcal: 600, salt: 3.0, cat: 'ごはん', aiy: ['Bibimbap'] },
-  { id: 'sushi', name: 'にぎり寿司（1人前）', kcal: 550, salt: 3.5, cat: 'ごはん', aiy: ['Sushi'] },
+  { id: 'sushi', name: 'にぎり寿司（1人前）', kcal: 550, salt: 3.5, cat: 'ごはん', aiy: ['Sushi'], like: ['sashimi'] },
   { id: 'chazuke', name: 'お茶漬け', kcal: 300, salt: 2.0, cat: 'ごはん', aiy: ['Chazuke'] },
   { id: 'okayu', name: 'おかゆ・雑炊', kcal: 200, salt: 1.0, cat: 'ごはん', aiy: ['Congee', 'Zosui'] },
   { id: 'bento', name: 'お弁当', kcal: 700, salt: 3.0, cat: 'ごはん', aiy: ['Bento'] },
   // めん
-  { id: 'ramen', name: 'ラーメン', kcal: 550, salt: 6.0, cat: 'めん', aiy: ['Ramen'] },
-  { id: 'udon', name: 'かけうどん', kcal: 350, salt: 5.0, cat: 'めん', aiy: ['Udon'] },
-  { id: 'soba', name: 'かけそば', kcal: 330, salt: 4.5, cat: 'めん', aiy: ['Okinawa soba'] },
+  { id: 'ramen', name: 'ラーメン', kcal: 550, salt: 6.0, cat: 'めん', aiy: ['Ramen', 'Chinese noodles', 'Wonton noodles', 'Champon'] },
+  { id: 'udon', name: 'かけうどん', kcal: 350, salt: 5.0, cat: 'めん', aiy: ['Udon'], like: ['soba'] },
+  { id: 'soba', name: 'かけそば', kcal: 330, salt: 4.5, cat: 'めん', aiy: ['Okinawa soba'], like: ['udon'] },
   { id: 'zarusoba', name: 'ざるそば', kcal: 300, salt: 2.5, cat: 'めん' },
   { id: 'yakisoba', name: '焼きそば・焼きうどん', kcal: 550, salt: 3.5, cat: 'めん', aiy: ['Yakisoba', 'Yaki udon'] },
   { id: 'spaghetti', name: 'スパゲッティ（ミートソース）', kcal: 650, salt: 3.0, cat: 'めん', aiy: ['Spaghetti'] },
@@ -40,7 +43,7 @@ window.FOODS = [
   { id: 'burger', name: 'ハンバーガー', kcal: 500, salt: 2.5, cat: 'パン', aiy: ['Hamburger', 'Cheeseburger'] },
   { id: 'hotdog', name: 'ホットドッグ', kcal: 400, salt: 2.0, cat: 'パン', aiy: ['Hot dog'] },
   { id: 'pizza', name: 'ピザ（2切れ）', kcal: 500, salt: 2.5, cat: 'パン', aiy: ['Neapolitan pizza', 'New York-style pizza', 'California-style pizza', 'Chicago-style pizza'] },
-  { id: 'nikuman', name: '肉まん', kcal: 250, salt: 1.0, cat: 'パン', aiy: ['Nikuman'] },
+  { id: 'nikuman', name: '肉まん', kcal: 250, salt: 1.0, cat: 'パン', aiy: ['Nikuman', 'Baozi'] },
   // おかず
   { id: 'karaage', name: '唐揚げ（5個）', kcal: 450, salt: 2.0, cat: 'おかず', aiy: ['Fried chicken'] },
   { id: 'tonkatsu', name: 'とんかつ', kcal: 500, salt: 1.5, cat: 'おかず', aiy: ['Tonkatsu'] },
@@ -51,11 +54,12 @@ window.FOODS = [
   { id: 'yakiniku', name: '焼肉', kcal: 500, salt: 2.5, cat: 'おかず', aiy: ['Yakiniku'] },
   { id: 'yakizakana', name: '焼き魚（さけ）', kcal: 200, salt: 1.5, cat: 'おかず' },
   { id: 'fishfry', name: '魚のフライ', kcal: 300, salt: 1.0, cat: 'おかず', aiy: ['Fried fish'] },
-  { id: 'sashimi', name: 'さしみ', kcal: 150, salt: 0.5, cat: 'おかず' },
+  { id: 'sashimi', name: 'さしみ', kcal: 150, salt: 0.5, cat: 'おかず', aiy: ['Hoe', 'Yusheng', 'Poke'], like: ['sushi'] },
+  { id: 'nanban', name: '南蛮漬け', kcal: 250, salt: 1.8, cat: 'おかず', aiy: ['Nanbanzuke'] },
   { id: 'nikujaga', name: '肉じゃが', kcal: 300, salt: 2.5, cat: 'おかず', aiy: ['Nikujaga'] },
   { id: 'shogayaki', name: 'しょうが焼き', kcal: 400, salt: 2.5, cat: 'おかず' },
   { id: 'gyoza', name: 'ぎょうざ（6個）', kcal: 350, salt: 2.0, cat: 'おかず', aiy: ['Jiaozi', 'Dumpling'] },
-  { id: 'shumai', name: 'シュウマイ（6個）', kcal: 250, salt: 1.5, cat: 'おかず', aiy: ['Shumai'] },
+  { id: 'shumai', name: 'シュウマイ・点心（6個）', kcal: 250, salt: 1.5, cat: 'おかず', aiy: ['Shumai', 'Dim sum', 'Har gow', 'Xiaolongbao'] },
   { id: 'mapotofu', name: '麻婆豆腐', kcal: 300, salt: 2.5, cat: 'おかず', aiy: ['Mapo doufu'] },
   { id: 'tempura', name: '天ぷら盛り合わせ', kcal: 450, salt: 1.0, cat: 'おかず', aiy: ['Tempura'] },
   { id: 'yakitori', name: '焼き鳥（3本）', kcal: 250, salt: 2.0, cat: 'おかず', aiy: ['Yakitori'] },

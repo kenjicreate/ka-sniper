@@ -77,8 +77,15 @@
     try {
       const e = await withTimeout(prepare(), 30000);
       const r = await withTimeout(e.classify(img), 15000);
-      return r.map((x) => ({ food: window.FOODS.find((f) => f.id === x.id), score: x.score }))
-        .filter((x) => x.food).slice(0, 3);
+      const byId = (id) => window.FOODS.find((f) => f.id === id);
+      const list = r.map((x) => ({ food: byId(x.id), score: x.score })).filter((x) => x.food);
+      // 1位の料理と見た目が似ている料理（うどんとそば、寿司とさしみ等）を2番目に入れる
+      if (list.length) {
+        const like = (list[0].food.like || []).map(byId).filter(Boolean).map((food) => ({ food, score: 0 }));
+        list.splice(1, 0, ...like);
+      }
+      const seen = new Set();
+      return list.filter((x) => !seen.has(x.food.id) && seen.add(x.food.id)).slice(0, 3);
     } catch (err) {
       console.warn('判定できませんでした', err);
       return [];
