@@ -3,6 +3,12 @@ name: カロリーごはん帳をAppleに送る
 # GitHub の「Actions」画面の「Run workflow」ボタンで動かします
 on:
   workflow_dispatch:
+  # カロリーごはん帳の作業用ブランチに送ると、自動で組み立てて TestFlight に送る
+  push:
+    branches: [claude/calorie-gohan-spec-prhg0e]
+    paths:
+      - 'calorie-gohan/**'
+      - '.github/workflows/calorie-gohan-ios.yml'
 
 jobs:
   build:
