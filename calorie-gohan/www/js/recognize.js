@@ -1,12 +1,13 @@
 // 写真から料理名を当てる仕組み
-// 無料版：スマホの中で判定（写真は外に送らない）
-//   1) models/food/ に日本の料理用の判定データを置けば、それを優先して使う（将来の差し替え用）
-//   2) なければ、一般的な画像判定（MobileNet）で分かる料理だけ当てる
+// 無料版：スマホの中だけで判定する（写真は外に送らない・ネットがなくても動く）
+//   判定データ：Google の料理判定データ「AIY Food V1」（約2,000種類の料理を見分ける）
+//   models/food/aiy_food_V1.tflite と labels.txt（料理名の一覧）
 // 有料版：外部のAIサービスで判定（あとで追加。ここに入り口だけ用意）
 (function () {
-  const TF_URL = 'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js';
-  const MOBILENET_URL = 'https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js';
-  let engine = null; // { classify(img) => [{ id, score }] }
+  const SIZE = 192;        // 判定データが受け取る写真の大きさ
+  const MIN_SCORE = 0.03;  // これより自信がない候補は出さない
+  let engine = null;
+  let preparing = null;
 
   function loadScript(src) {
     return new Promise((ok, ng) => {
@@ -16,56 +17,55 @@
       document.head.appendChild(s);
     });
   }
-
   function withTimeout(p, ms) {
     return Promise.race([p, new Promise((_, ng) => setTimeout(() => ng(new Error('timeout')), ms))]);
   }
 
-  // 英語のラベル → 料理表の id
-  const labelMap = {};
-  for (const f of window.FOODS) for (const l of f.ml || []) labelMap[l.toLowerCase()] = f.id;
-
-  async function customEngine() {
-    // models/food/model.json と labels.json（料理表の id の並び）があれば使う
-    const res = await fetch('models/food/labels.json').catch(() => null);
-    if (!res || !res.ok) return null;
-    const labels = await res.json();
-    const model = await tf.loadGraphModel('models/food/model.json');
-    return {
-      async classify(img) {
-        const x = tf.tidy(() => tf.image.resizeBilinear(tf.browser.fromPixels(img), [224, 224]).toFloat().div(255).expandDims());
-        const out = await model.predict(x).data();
-        x.dispose();
-        return Array.from(out).map((score, i) => ({ id: labels[i], score }))
-          .sort((a, b) => b.score - a.score).slice(0, 5);
-      },
-    };
+  // 判定データの料理名 → 料理表の id
+  function buildMap(labels) {
+    const byName = {};
+    for (const f of window.FOODS) for (const n of f.aiy || []) byName[n] = f.id;
+    return labels.map((n) => byName[n] || null);
   }
 
-  async function mobilenetEngine() {
-    await loadScript(MOBILENET_URL);
-    const model = await mobilenet.load({ version: 2, alpha: 1.0 });
+  async function load() {
+    await loadScript('vendor/tf-core.min.js');
+    await loadScript('vendor/tf-backend-cpu.min.js');
+    await loadScript('vendor/tf-tflite.min.js');
+    tflite.setWasmPath('vendor/');
+    const [model, text] = await Promise.all([
+      tflite.loadTFLiteModel('models/food/aiy_food_V1.tflite'),
+      fetch('models/food/labels.txt').then((r) => r.text()),
+    ]);
+    const toFood = buildMap(text.split('\n').map((s) => s.trim()));
     return {
       async classify(img) {
-        const preds = await model.classify(img, 10);
-        const out = [];
-        for (const p of preds) {
-          // "cheeseburger, ..." のような名前を分けて照合
-          for (const name of p.className.split(',').map((s) => s.trim().toLowerCase())) {
-            const id = labelMap[name];
-            if (id && !out.find((o) => o.id === id)) out.push({ id, score: p.probability });
-          }
+        // 真ん中を正方形に切り取り、192×192 に縮める
+        const c = document.createElement('canvas');
+        c.width = c.height = SIZE;
+        const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height, s = Math.min(w, h);
+        c.getContext('2d').drawImage(img, (w - s) / 2, (h - s) / 2, s, s, 0, 0, SIZE, SIZE);
+        const input = tf.tidy(() => tf.cast(tf.expandDims(tf.browser.fromPixels(c), 0), 'int32'));
+        const out = model.predict(input);
+        const scores = await out.data();
+        input.dispose(); out.dispose();
+        // 自信の高い順に、料理表にある料理だけを拾う（同じ料理は1回だけ）
+        const order = Array.from(scores.keys()).sort((a, b) => scores[b] - scores[a]).slice(0, 40);
+        const found = new Map();
+        for (const i of order) {
+          const id = toFood[i];
+          const sc = scores[i] / 255;
+          if (id && sc >= MIN_SCORE) found.set(id, (found.get(id) || 0) + sc);
         }
-        return out;
+        return [...found].map(([id, score]) => ({ id, score })).sort((a, b) => b.score - a.score);
       },
     };
   }
 
-  async function prepare() {
-    if (engine) return engine;
-    await loadScript(TF_URL);
-    engine = (await customEngine().catch(() => null)) || (await mobilenetEngine());
-    return engine;
+  function prepare() {
+    if (engine) return Promise.resolve(engine);
+    if (!preparing) preparing = load().then((e) => (engine = e)).catch((e) => { preparing = null; throw e; });
+    return preparing;
   }
 
   // 戻り値: [{ food, score }]（見つからなければ空）
@@ -75,8 +75,8 @@
       // 有料版はここで外部AIを呼ぶ予定（月の上限回数つき）。いまは未実装なので無料版の判定を使う。
     }
     try {
-      const e = await withTimeout(prepare(), 20000);
-      const r = await withTimeout(e.classify(img), 10000);
+      const e = await withTimeout(prepare(), 30000);
+      const r = await withTimeout(e.classify(img), 15000);
       return r.map((x) => ({ food: window.FOODS.find((f) => f.id === x.id), score: x.score }))
         .filter((x) => x.food).slice(0, 3);
     } catch (err) {

@@ -614,6 +614,8 @@
     await Ads.init();
     Ads.showBanner();
     if (!S.d.setup) go('setup', { step: 1 }); else go('home');
+    // 写真の判定データを先に読みこんでおく（最初の1枚を待たせないため）
+    setTimeout(() => Recognizer.prepare().catch(() => {}), 1500);
   })();
 
   window.App = { go, state };
