@@ -157,6 +157,18 @@ def main():
                 call("PATCH", f"/appScreenshots/{shot['id']}", {"data": {"type": "appScreenshots", "id": shot["id"],
                      "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(data).hexdigest()}}})
                 print(f"  ・{loc}/{os.path.basename(f)}")
+            # Apple 側の処理が終わったか確かめる（失敗していたら理由を出す）
+            import time
+            for _ in range(24):
+                shots = call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]
+                states = [(x.get("attributes", {}).get("fileName"), (x.get("attributes", {}).get("assetDeliveryState") or {})) for x in shots]
+                if all(st.get("state") in ("COMPLETE", "FAILED") for _, st in states):
+                    break
+                time.sleep(5)
+            bad = [f"{n}: {st.get('state')} {st.get('errors')}" for n, st in states if st.get("state") != "COMPLETE"]
+            print(f"  → Apple 側の枠 {kind} に {len(states)} 枚。処理済み {len(states) - len(bad)} 枚")
+            if bad:
+                raise RuntimeError("Apple で処理されなかった画像があります：" + " / ".join(bad))
 
         app_info_text()
         version_text()
@@ -180,6 +192,17 @@ def main():
     for loc, m in meta["locales"].items():
         one_locale(loc, m)
     build()
+
+    @step("確認：Apple に入っているスクリーンショット")
+    def report():
+        for loc in meta["locales"]:
+            vls = [v for v in call("GET", f"/appStoreVersions/{version_id}/appStoreVersionLocalizations")["data"] if v["attributes"]["locale"] == loc]
+            if not vls:
+                print(f"  ・{loc}：言語がありません"); continue
+            for st in call("GET", f"/appStoreVersionLocalizations/{vls[0]['id']}/appScreenshotSets")["data"]:
+                n = len(call("GET", f"/appScreenshotSets/{st['id']}/appScreenshots")["data"])
+                print(f"  ・{loc}：{st['attributes']['screenshotDisplayType']} に {n} 枚")
+    report()
 
     if problems:
         print("::error::うまくいかなかった作業があります：\n" + "\n".join(problems))
