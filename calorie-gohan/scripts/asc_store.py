@@ -82,11 +82,12 @@ def editable_version(app_id):
     raise RuntimeError("編集できるバージョン（提出準備中）が見つかりません")
 
 
-def localization(list_path, locale, create_type, rel_name, parent_type, parent_id):
+def localization(list_path, locale, create_type, rel_name, parent_type, parent_id, extra=None):
     for loc in call("GET", list_path)["data"]:
         if loc["attributes"]["locale"] == locale:
             return loc["id"]
-    return call("POST", f"/{create_type}", {"data": {"type": create_type, "attributes": {"locale": locale},
+    # 新しい言語を足す（アプリ名など、作る時に必ず要る項目は extra で渡す）
+    return call("POST", f"/{create_type}", {"data": {"type": create_type, "attributes": dict({"locale": locale}, **(extra or {})),
                "relationships": {rel_name: {"data": {"type": parent_type, "id": parent_id}}}}})["data"]["id"]
 
 
@@ -114,7 +115,8 @@ def main():
 
         @step(f"[{loc}] アプリ名・サブタイトル・プライバシーポリシーURL")
         def app_info_text():
-            lid = localization(f"/appInfos/{info_id}/appInfoLocalizations", loc, "appInfoLocalizations", "appInfo", "appInfos", info_id)
+            lid = localization(f"/appInfos/{info_id}/appInfoLocalizations", loc, "appInfoLocalizations", "appInfo", "appInfos", info_id,
+                               {"name": m["name"]})
             call("PATCH", f"/appInfoLocalizations/{lid}", {"data": {"type": "appInfoLocalizations", "id": lid, "attributes": {
                 "name": m["name"], "subtitle": m["subtitle"], "privacyPolicyUrl": m["privacyPolicyUrl"]}}})
 
