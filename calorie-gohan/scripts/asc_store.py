@@ -141,8 +141,15 @@ def main():
                 sid = call("POST", "/appScreenshotSets", {"data": {"type": "appScreenshotSets",
                            "attributes": {"screenshotDisplayType": kind}, "relationships": {"appStoreVersionLocalization":
                            {"data": {"type": "appStoreVersionLocalizations", "id": version_loc}}}}})["data"]["id"]
-            # 前に入れたものは消して、入れ直す
-            for old in call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]:
+            # すでに同じ画像が同じ順に入っていれば、何もしない（消して入れ直すと、処理中のあいだ画像が欠けて見えるため）
+            existing = call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]
+            want = [(os.path.basename(f), hashlib.md5(open(f, "rb").read()).hexdigest()) for f in files]
+            have = [(x.get("attributes", {}).get("fileName"), x.get("attributes", {}).get("sourceFileChecksum")) for x in existing]
+            if want == have:
+                print(f"  ・{loc}：同じスクリーンショットが入っているので、そのまま")
+                return
+            # 違っていれば、前に入れたものは消して、入れ直す
+            for old in existing:
                 call("DELETE", f"/appScreenshots/{old['id']}")
             for f in files:
                 data = open(f, "rb").read()
@@ -159,7 +166,7 @@ def main():
                 print(f"  ・{loc}/{os.path.basename(f)}")
             # Apple 側の処理が終わったか確かめる（失敗していたら理由を出す）
             import time
-            for _ in range(24):
+            for _ in range(60):  # 最大5分待つ
                 shots = call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]
                 states = [(x.get("attributes", {}).get("fileName"), (x.get("attributes", {}).get("assetDeliveryState") or {})) for x in shots]
                 if all(st.get("state") in ("COMPLETE", "FAILED") for _, st in states):
