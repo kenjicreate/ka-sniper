@@ -66,15 +66,24 @@
     const last = w[w.length - 1], prev = w[w.length - 2];
     return last.kg <= prev.kg - 0.3 && last.date >= Day.add(Day.key(), -2);
   }
-  const MOOD_TALK = {
-    happy: ['いい感じ！', 'ちょうどいいね♪', 'ニコニコだよ'],
-    normal: ['今日もよろしくね', '何を食べるのかな？'],
-    full: ['お腹パンパン…', '食べすぎちゃったかも…'],
-    hungry: ['お腹がグ〜って鳴ってるよ', 'そろそろ何か食べよう？'],
-    weak: ['ちょっと元気が出ないな…', '痩せすぎかも。しっかり食べてね'],
-    slim: ['体重がへったね！その調子', 'からだが軽くなったよ'],
-  };
-  const pick = (a) => a[Math.floor(Math.random() * a.length)];
+  // せりふを選ぶための、いまの状況
+  function talkContext(m = mood()) {
+    const s = set(), now = new Date(), today = mealsOf(Day.key());
+    const eaten = sum(today, 'kcal');
+    const ws = [...S.d.weights].sort((a, b) => (a.date < b.date ? -1 : 1));
+    let daysSinceWeight = null;
+    if (ws.length) {
+      const [y, mo, d] = ws[ws.length - 1].date.split('-').map(Number);
+      daysSinceWeight = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()) - new Date(y, mo - 1, d)) / 864e5);
+    }
+    return {
+      mood: m, hour: now.getHours(), month: now.getMonth() + 1, weekday: now.getDay(),
+      eaten, goal: s.goalKcal, left: s.goalKcal - eaten, slots: new Set(today.map((x) => x.slot)),
+      streak: streak(), salt: sum(today, 'salt'), saltGoal: s.saltGoal,
+      water: S.d.water[Day.key()] || 0, waterGoal: s.waterGoal, daysSinceWeight,
+      doctor: s.goalSource === 'doctor', firstTime: S.d.meals.length === 0,
+    };
+  }
 
   function charaSVG(m = mood(), type = Chara.fix(set().chara)) {
     return Chara.svg(type, { build: Chara.buildFromBMI(bmi()), mood: m });
@@ -131,12 +140,13 @@
     const left = s.goalKcal - eaten;
     const pct = Math.min(100, (eaten / s.goalKcal) * 100);
     const m = mood();
-    const talk = state.p.talk || pick(MOOD_TALK[m]);
+    if (!state.p.talk) state.p.talk = Talk.home(talkContext(m));
+    const talk = state.p.talk;
     const st = streak();
     return `
       <div class="top"><span>${Day.label(Day.key())}</span>${st ? `<span class="streak">${st}日連続 記録中</span>` : ''}</div>
-      <div class="stage ${state.p.react ? 'react' : ''}">
-        <div class="bubble" aria-live="polite">${esc(talk)}</div>
+      <div class="stage ${state.p.react ? 'react' : ''}" data-act="talk" role="button" aria-label="キャラに話しかける">
+        <div class="bubble" id="bubble" aria-live="polite">${esc(talk)}</div>
         ${charaSVG(m)}
       </div>
       <div class="card center">
@@ -148,7 +158,8 @@
       </div>
       <button class="btn-photo" data-act="photo">📷 写真を撮る</button>
       <p class="center muted">料理だけを撮ってね（顔や名前は写さないでね）</p>
-      <div class="row"><button class="btn-sub" data-go="manual">写真なしで記録</button><button class="btn-sub" data-go="menu">ほかの機能</button></div>`;
+      <button class="btn-sub" data-go="manual">写真なしで記録する</button>
+      <button class="btn-sub" data-go="menu">ほかの機能</button>`;
   };
 
   R.menu = () => `${back()}<h1>ほかの機能</h1>
@@ -447,9 +458,7 @@
     S.save();
     if (p.url) URL.revokeObjectURL(p.url);
     // 記録が終わったらキャラが反応 → その後なら画面いっぱいの広告を出してよい
-    const m = mood();
-    const left = set().goalKcal - sum(mealsOf(Day.key()), 'kcal');
-    const talk = m === 'full' ? 'ごちそうさま…お腹パンパンだよ〜' : left >= 0 ? `ごちそうさま！あと ${n0(left)} kcal だよ` : 'ごちそうさま！今日はこれくらいにしよう';
+    const talk = Talk.afterMeal(talkContext(), { name: p.food.name, salt: p.food.salt * por.rate, portion: por.label, foodId: p.food.id, cat: p.food.cat });
     go('home', { react: true, talk });
     setTimeout(() => { if (state.screen === 'home') Ads.maybeFullScreen(); }, 2600);
   }
@@ -483,6 +492,15 @@
 
   const ACT = {
     photo: () => { $file.value = ''; $file.click(); },
+    // キャラをさわると、別のことをしゃべる
+    talk: () => {
+      const b = document.getElementById('bubble');
+      if (!b) return;
+      state.p.talk = Talk.home(talkContext());
+      b.textContent = state.p.talk;
+      const st = document.querySelector('.stage');
+      st.classList.remove('react'); void st.offsetWidth; st.classList.add('react');
+    },
     manualFromPhoto: () => go('manual', { fromPhoto: true, url: state.p.url }),
     pickFood: (el) => {
       const food = FOODS.find((f) => f.id === el.dataset.id);
