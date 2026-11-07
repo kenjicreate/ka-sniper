@@ -100,7 +100,9 @@ input:focus { outline: 4px solid #1D4ED8; outline-offset: 1px; }
 .list li { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .7rem 0; border-bottom: 2px solid #F1E2CC; }
 .list li:last-child { border-bottom: 0; }
 .food-btn { text-align: left; display: flex; justify-content: space-between; gap: .5rem; background: #fff; color: var(--ink); border: 3px solid var(--line); box-shadow: none; border-radius: 20px; }
-.food-btn span:last-child { white-space: nowrap; color: var(--ink-soft); }
+.food-btn { flex-wrap: wrap; }  /* 名前が長い時は、カロリーを次の行へ */
+.food-btn span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.food-btn span:last-child { white-space: nowrap; color: var(--ink-soft); margin-left: auto; }
 .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: .6rem 0; }
 .chips button { width: auto; margin: 0; min-height: 2.6rem; padding: .2em 1em; background: #fff; color: var(--ink); border: 3px solid var(--line); box-shadow: none; }
 .chips button.sel { background: var(--main); color: #fff; border-color: var(--main); }

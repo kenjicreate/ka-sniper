@@ -1,0 +1,4 @@
+/* アプリ名と、カメラ・写真の許可の説明（日本語） */
+"CFBundleDisplayName" = "カロリーごはん帳";
+"NSCameraUsageDescription" = "食事の写真を撮って、カロリーの目安を調べるためにカメラを使います。";
+"NSPhotoLibraryUsageDescription" = "撮った食事の写真を選んで、カロリーの目安を調べるために使います。";

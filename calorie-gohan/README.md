@@ -20,17 +20,18 @@ GitHub の Actions →「カロリーごはん帳をAppleに送る」→ Run wor
 - キャラ3種（男の人・女の人・くま。絵は `www/img/chara/`）。体重で体格が少し変わる／ちょうど良い＝元気いっぱい、食べすぎ＝お腹パンパン、足りない＝グ〜、体重が減った＝引きしまった姿、痩せすぎ＝ぐったり
 - 1週間・1か月のまとめ（印刷・PDF）、許可した人へまとめを送る
 - 文字の大きさ3段階、食事の時間のお知らせ（アプリ版）
+- 日本語・英語（スマホの言語に合わせて自動。設定でも切り替え可）。画面の文字は `www/js/i18n.js`、せりふは `www/js/talk.js`、料理の英語名は `www/js/foods.js` の `en`
 - 広告の場所と出すルール（下の細い広告／画面いっぱいは記録後・まとめを開いた時だけ、1日1回）
 
 ## App Store への提出
-- 掲載情報（説明文・キーワード等）：`store/metadata.json`、スクリーンショット：`store/*.png`（6.9インチ、1320×2868）
+- 掲載情報（説明文・キーワード等）：`store/metadata.json`（日本語 ja・英語 en-US）、スクリーンショット：`store/ja/*.png`・`store/en-US/*.png`（6.9インチ、1320×2868）
 - GitHub の Actions「カロリーごはん帳の掲載情報をAppleに送る」で、文章・スクリーンショット・ビルドを App Store Connect に自動で入れる
-- プライバシーポリシー：`privacy.html`（main に入ると https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy.html で公開）
+- プライバシーポリシー：`privacy.html`（日本語）・`privacy-en.html`（英語）。main に入ると https://kenjicreate.github.io/ka-sniper/calorie-gohan/ の下で公開
 - App Store Connect の画面でやること：App のプライバシー、価格（無料）、年齢制限、審査用の連絡先、「審査に提出」
 
 ## これから
 - **写真の判定**：料理表にない料理は「選んでもらう」形。料理表に料理を増やす時は `www/js/foods.js` の `aiy` に判定データ側の料理名（`www/models/food/labels.txt`）を書く。1枚に複数の料理がある時（定食など）は、いまは1品ずつ記録
-- **AdMob**：いまは広告の場所だけ（`www/js/ads.js`）。AdMob の部品を入れ、テスト用の番号を自分の番号へ差し替える。
+- **AdMob**：本物の番号を設定済み（アプリID は `ios/App/App/Info.plist`、広告ユニットは `www/js/ads.js`）。App Store に出たら、AdMob の画面でアプリをストアにつなぐ。
 - **有料版**：外部AI（Geminiなど）での判定・月額課金・利用回数の上限（入り口は `www/js/recognize.js`）。
 - **共有**：いまは「本人が送る」方式。家族がいつでも見られる形にするには、データを置く場所（サーバー）が必要。
 - **Android 版**：`npx cap add android` で追加できる作りです。

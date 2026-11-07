@@ -1,5 +1,6 @@
 """App Store Connect の準備を自動で行う。
 
+0. 前回までの自動作業が作った証明書（はんこ）を取り消す（上限で止まらないように）
 1. バンドルID（アプリの識別子）が Apple に登録されていなければ登録する
 2. App Store Connect にアプリが登録済みか確かめる（未登録なら、やることを表示して止める）
 
@@ -41,7 +42,8 @@ def call(method, path, body=None):
     )
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
-            return json.load(r)
+            raw = r.read()
+            return json.loads(raw) if raw else {}
     except urllib.error.HTTPError as e:
         print(f"::error::App Store Connect への問い合わせに失敗しました（{e.code}）: {e.read().decode()[:500]}")
         sys.exit(1)
@@ -53,7 +55,27 @@ def find_bundle():
     return [b for b in call("GET", "/bundleIds?" + q)["data"] if b["attributes"]["identifier"] == BUNDLE_ID]
 
 
+def cleanup_certs():
+    """自動作業（GitHub の Mac）が作った証明書を取り消す。
+
+    自動作業は毎回まっさらな Mac で動くので、前回作った証明書の鍵は残っておらず、二度と使えない。
+    取り消すのは名前に「Created via API」と付くものだけ。人が自分の Mac で作った証明書には触らない。
+    App Store・TestFlight に出ているアプリには影響しない。
+    """
+    certs = call("GET", "/certificates?limit=200")["data"]
+    n = 0
+    for c in certs:
+        a = c["attributes"]
+        label = f"{a.get('name') or ''} {a.get('displayName') or ''}"
+        if "Created via API" in label:
+            call("DELETE", f"/certificates/{c['id']}")
+            n += 1
+            print(f"  ・取り消し：{a.get('certificateType')} {label.strip()}")
+    print(f"自動作業が作った古い証明書を {n} 個取り消しました（全部で {len(certs)} 個あったうち）")
+
+
 def main():
+    cleanup_certs()
     if find_bundle():
         print(f"バンドルID {BUNDLE_ID} は登録済みです")
     else:

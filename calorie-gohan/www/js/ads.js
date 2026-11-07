@@ -3,10 +3,10 @@
 // ブラウザで見ているときは、広告の場所だけ表示する。
 (function () {
   // ▼ AdMob の広告ユニット番号（AdMob の管理画面で作ったもの）
-  //   まだ番号がないときは Google のテスト用番号（本物の広告は出ない・収益なし）
+  //   （Google のテスト用番号 ca-app-pub-3940256099942544/… にすると、本物の広告は出ない・収益なし）
   const IDS = {
-    banner: 'ca-app-pub-3940256099942544/2934735716',       // 画面下の細い広告（バナー）
-    interstitial: 'ca-app-pub-3940256099942544/4411468910', // 画面いっぱいの広告（インタースティシャル）
+    banner: 'ca-app-pub-9222119240854607/8910813079',       // 画面下の細い広告（バナー）「ホーム下のバナー」
+    interstitial: 'ca-app-pub-9222119240854607/7716170969', // 画面いっぱいの広告（インタースティシャル）「記録後の全画面」
   };
   const TESTING = IDS.banner.startsWith('ca-app-pub-3940256099942544');
 
@@ -45,6 +45,7 @@
   // 画面の下の細い広告
   async function showBanner() {
     const el = document.getElementById('adBar');
+    refreshText();
     // 最初の設定の途中は出さない
     const on = isFree() && window.Store.d.setup;
     el.hidden = !on;
@@ -84,11 +85,14 @@
     return new Promise((ok) => {
       const o = document.createElement('div');
       o.className = 'ad-full';
-      o.innerHTML = '<div class="ad-full-box"><p class="ad-tag">広告</p><p>ここに広告が出ます</p><button class="btn">とじる</button></div>';
+      o.innerHTML = `<div class="ad-full-box"><p class="ad-tag">${I18N.t('ad.label')}</p><p>${I18N.t('ad.mock')}</p><button class="btn">${I18N.t('ad.close')}</button></div>`;
       o.querySelector('button').onclick = () => { o.remove(); ok(true); };
       document.body.appendChild(o);
     });
   }
 
-  window.Ads = { init, showBanner, maybeFullScreen, TESTING };
+  // 広告の場所の「広告」の文字を今の言語に
+  function refreshText() { const sp = document.querySelector('#adBar span'); if (sp) sp.textContent = I18N.t('ad.label'); }
+
+  window.Ads = { init, showBanner, maybeFullScreen, refreshText, TESTING };
 })();
