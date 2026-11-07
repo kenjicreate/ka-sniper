@@ -45,18 +45,62 @@
     return n;
   }
 
+  // ───────── お腹の具合 ─────────
+  // 食べた時刻（「朝ごはん」をお昼に入力した時などは、ふつうの食事時間とみなす）
+  const SLOT_TIME = { '朝ごはん': [7, 30], '昼ごはん': [12, 30], '夜ごはん': [19, 0] };
+  function mealTime(m) {
+    const [y, mo, d] = m.date.split('-').map(Number);
+    const [hh, mm] = (m.time || '12:00').split(':').map(Number);
+    const rec = new Date(y, mo - 1, d, hh, mm);
+    const st = SLOT_TIME[m.slot];
+    if (st) {
+      const std = new Date(y, mo - 1, d, st[0], st[1]);
+      // 記録が食事時間より2時間以上あと → あとからまとめて入力したとみなす
+      if (rec - std > 2 * 3600e3) return std;
+    }
+    return rec;
+  }
+
+  // 満腹度（0=からっぽ、1=ふつうの1食を食べた直後、2以上=食べすぎ）
+  // 1食ぶん＝1日の目標の3分の1。食べた量が多いほど長く続き、時間とともに減っていく。
+  function fullness(now = new Date()) {
+    const one = set().goalKcal / 3;
+    const since = Day.add(Day.key(now), -1);
+    let f = 0, lastAt = null;
+    for (const m of S.d.meals) {
+      if (m.date < since) continue;
+      const t = mealTime(m);
+      const hrs = (now - t) / 3600e3;
+      if (hrs < 0) continue;
+      const amount = (m.kcal || 0) / one;
+      const lasts = 2 + 2.5 * Math.min(amount, 2); // 何時間でお腹がすくか（1食ぶんで約4.5時間）
+      f += amount * Math.max(0, 1 - hrs / lasts);
+      if (!lastAt || t > lastAt) lastAt = t;
+    }
+    return { f, hoursSince: lastAt ? (now - lastAt) / 3600e3 : null };
+  }
+
   // キャラの気分
+  //   weak=痩せすぎ / full=お腹パンパン / hungry=お腹がグ〜 / peckish=少しすいてきた
+  //   happy=ニコニコ（食べた直後・ちょうど良い）/ slim=体重が減った / normal=ふつう
   function mood() {
     const b = bmi();
     if (b && b < 18.5) return 'weak';
+    const now = new Date(), h = now.getHours();
     const eaten = sum(mealsOf(Day.key()), 'kcal');
     const goal = set().goalKcal;
-    if (eaten > goal * 1.1) return 'full';
-    if (eaten >= goal * 0.85) return 'happy';
-    const h = new Date().getHours();
-    const expect = h < 10 ? 0 : h < 13 ? 0.15 : h < 17 ? 0.35 : h < 20 ? 0.5 : 0.7;
-    if (eaten < goal * expect) return 'hungry';
+    const { f, hoursSince } = fullness(now);
+    if (eaten > goal * 1.1) return 'full';          // 今日は食べすぎ
+    if (f >= 1.8) return 'full';                    // 1回にたくさん食べた直後
+    if (f >= 0.7) return 'happy';                   // 食べてまだ間もない
+    const night = h >= 22 || h < 5;
+    if (eaten >= goal * 0.85) return f < 0.25 && !night && hoursSince >= 3 ? 'normal' : 'happy'; // 今日はもう十分食べた
+    // 足りない日：夜になっても目標の6割に届かない
+    if (h >= 19 && !night && eaten < goal * 0.6 && f < 0.5) return 'hungry';
+    // 前の食事から時間がたって、お腹がからっぽ（夜中は寝ているのでグ〜は鳴らさない）
+    if (!night && f < 0.15 && (hoursSince === null ? h >= 9 : hoursSince >= 4)) return 'hungry';
     if (weightDown()) return 'slim';
+    if (!night && f < 0.4 && hoursSince !== null && hoursSince >= 2.5) return 'peckish';
     return eaten > 0 ? 'happy' : 'normal';
   }
   // 最近、体重が減った（直近の記録が1つ前より0.3kg以上少なく、3日以内に記録）
@@ -82,6 +126,7 @@
       streak: streak(), salt: sum(today, 'salt'), saltGoal: s.saltGoal,
       water: S.d.water[Day.key()] || 0, waterGoal: s.waterGoal, daysSinceWeight,
       doctor: s.goalSource === 'doctor', firstTime: S.d.meals.length === 0,
+      hoursSince: fullness(now).hoursSince,
     };
   }
 

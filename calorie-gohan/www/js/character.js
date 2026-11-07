@@ -13,7 +13,7 @@
   };
 
   // 気分 → 絵
-  const IMG_OF = { normal: 'normal', happy: 'energetic', full: 'gained', slim: 'lost', weak: 'sick', hungry: 'normal' };
+  const IMG_OF = { normal: 'normal', happy: 'energetic', full: 'gained', slim: 'lost', weak: 'sick', hungry: 'normal', peckish: 'normal' };
 
   // 前のバージョンで選べた「いぬ・ねこ」は、くまに置きかえる
   const fix = (type) => (TYPES[type] ? type : 'bear');
