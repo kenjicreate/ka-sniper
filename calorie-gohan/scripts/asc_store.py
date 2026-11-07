@@ -1,8 +1,8 @@
 """App Store の掲載情報（文章・スクリーンショット）とビルドを、App Store Connect に自動で入れる。
 
 入れるもの（store/ フォルダの中身）
-  - metadata.json：アプリ名・サブタイトル・説明文・キーワード・プライバシーポリシーURL など
-  - *.png：iPhone 6.9インチ用スクリーンショット（1320×2868、ファイル名の順）
+  - metadata.json：言語ごとのアプリ名・サブタイトル・説明文・キーワード・プライバシーポリシーURL など
+  - {言語}/*.png：iPhone 6.9インチ用スクリーンショット（1320×2868、ファイル名の順）。例：ja/、en-US/
   - いちばん新しい処理済みビルドを、提出するバージョンに設定
 
 App Store Connect の画面でしかできないこと（このスクリプトでは触らない）
@@ -91,67 +91,75 @@ def localization(list_path, locale, create_type, rel_name, parent_type, parent_i
 
 
 def main():
-    m = json.load(open(os.path.join(STORE, "metadata.json"), encoding="utf-8"))
-    loc = m["locale"]
+    meta = json.load(open(os.path.join(STORE, "metadata.json"), encoding="utf-8"))
+    common = meta["common"]
     app_id = find_app()
     info_id = editable_app_info(app_id)
     version_id = editable_version(app_id)
 
-    @step("アプリ名・サブタイトル・プライバシーポリシーURL")
-    def app_info_text():
-        lid = localization(f"/appInfos/{info_id}/appInfoLocalizations", loc, "appInfoLocalizations", "appInfo", "appInfos", info_id)
-        call("PATCH", f"/appInfoLocalizations/{lid}", {"data": {"type": "appInfoLocalizations", "id": lid, "attributes": {
-            "name": m["name"], "subtitle": m["subtitle"], "privacyPolicyUrl": m["privacyPolicyUrl"]}}})
-
     @step("カテゴリ")
     def category():
-        rel = {"primaryCategory": {"data": {"type": "appCategories", "id": m["primaryCategory"]}}}
-        if m.get("secondaryCategory"):
-            rel["secondaryCategory"] = {"data": {"type": "appCategories", "id": m["secondaryCategory"]}}
+        rel = {"primaryCategory": {"data": {"type": "appCategories", "id": common["primaryCategory"]}}}
+        if common.get("secondaryCategory"):
+            rel["secondaryCategory"] = {"data": {"type": "appCategories", "id": common["secondaryCategory"]}}
         call("PATCH", f"/appInfos/{info_id}", {"data": {"type": "appInfos", "id": info_id, "relationships": rel}})
 
     @step("著作権の表示")
     def copyright_():
         call("PATCH", f"/appStoreVersions/{version_id}", {"data": {"type": "appStoreVersions", "id": version_id,
-             "attributes": {"copyright": m["copyright"]}}})
+             "attributes": {"copyright": common["copyright"]}}})
 
-    @step("説明文・キーワード・宣伝文・サポートURL")
-    def version_text():
-        global version_loc
-        version_loc = localization(f"/appStoreVersions/{version_id}/appStoreVersionLocalizations", loc,
-                                   "appStoreVersionLocalizations", "appStoreVersion", "appStoreVersions", version_id)
-        call("PATCH", f"/appStoreVersionLocalizations/{version_loc}", {"data": {"type": "appStoreVersionLocalizations",
-             "id": version_loc, "attributes": {"description": m["description"], "keywords": m["keywords"],
-             "promotionalText": m["promotionalText"], "supportUrl": m["supportUrl"]}}})
+    def one_locale(loc, m):
+        holder = {}
 
-    @step("スクリーンショット")
-    def screenshots():
-        files = sorted(glob.glob(os.path.join(STORE, "*.png")))
-        if not files:
-            raise RuntimeError("store/ にスクリーンショットがありません")
-        kind = "APP_IPHONE_67"  # 6.9インチ（1320×2868）もこの枠
-        sets = call("GET", f"/appStoreVersionLocalizations/{version_loc}/appScreenshotSets")["data"]
-        sid = next((s["id"] for s in sets if s["attributes"]["screenshotDisplayType"] == kind), None)
-        if not sid:
-            sid = call("POST", "/appScreenshotSets", {"data": {"type": "appScreenshotSets",
-                       "attributes": {"screenshotDisplayType": kind}, "relationships": {"appStoreVersionLocalization":
-                       {"data": {"type": "appStoreVersionLocalizations", "id": version_loc}}}}})["data"]["id"]
-        # 前に入れたものは消して、入れ直す
-        for old in call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]:
-            call("DELETE", f"/appScreenshots/{old['id']}")
-        for f in files:
-            data = open(f, "rb").read()
-            shot = call("POST", "/appScreenshots", {"data": {"type": "appScreenshots", "attributes": {
-                "fileName": os.path.basename(f), "fileSize": len(data)}, "relationships": {"appScreenshotSet":
-                {"data": {"type": "appScreenshotSets", "id": sid}}}}})["data"]
-            for op in shot["attributes"]["uploadOperations"]:
-                part = data[op["offset"]: op["offset"] + op["length"]]
-                req = urllib.request.Request(op["url"], method=op["method"], data=part,
-                                             headers={h["name"]: h["value"] for h in op["requestHeaders"]})
-                urllib.request.urlopen(req, timeout=120).read()
-            call("PATCH", f"/appScreenshots/{shot['id']}", {"data": {"type": "appScreenshots", "id": shot["id"],
-                 "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(data).hexdigest()}}})
-            print(f"  ・{os.path.basename(f)}")
+        @step(f"[{loc}] アプリ名・サブタイトル・プライバシーポリシーURL")
+        def app_info_text():
+            lid = localization(f"/appInfos/{info_id}/appInfoLocalizations", loc, "appInfoLocalizations", "appInfo", "appInfos", info_id)
+            call("PATCH", f"/appInfoLocalizations/{lid}", {"data": {"type": "appInfoLocalizations", "id": lid, "attributes": {
+                "name": m["name"], "subtitle": m["subtitle"], "privacyPolicyUrl": m["privacyPolicyUrl"]}}})
+
+        @step(f"[{loc}] 説明文・キーワード・宣伝文・サポートURL")
+        def version_text():
+            holder["vl"] = localization(f"/appStoreVersions/{version_id}/appStoreVersionLocalizations", loc,
+                                        "appStoreVersionLocalizations", "appStoreVersion", "appStoreVersions", version_id)
+            call("PATCH", f"/appStoreVersionLocalizations/{holder['vl']}", {"data": {"type": "appStoreVersionLocalizations",
+                 "id": holder["vl"], "attributes": {"description": m["description"], "keywords": m["keywords"],
+                 "promotionalText": m["promotionalText"], "supportUrl": m["supportUrl"]}}})
+
+        @step(f"[{loc}] スクリーンショット")
+        def screenshots():
+            version_loc = holder["vl"]
+            files = sorted(glob.glob(os.path.join(STORE, loc, "*.png")))
+            if not files:
+                raise RuntimeError(f"store/{loc}/ にスクリーンショットがありません")
+            kind = "APP_IPHONE_67"  # 6.9インチ（1320×2868）もこの枠
+            sets = call("GET", f"/appStoreVersionLocalizations/{version_loc}/appScreenshotSets")["data"]
+            sid = next((x["id"] for x in sets if x["attributes"]["screenshotDisplayType"] == kind), None)
+            if not sid:
+                sid = call("POST", "/appScreenshotSets", {"data": {"type": "appScreenshotSets",
+                           "attributes": {"screenshotDisplayType": kind}, "relationships": {"appStoreVersionLocalization":
+                           {"data": {"type": "appStoreVersionLocalizations", "id": version_loc}}}}})["data"]["id"]
+            # 前に入れたものは消して、入れ直す
+            for old in call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]:
+                call("DELETE", f"/appScreenshots/{old['id']}")
+            for f in files:
+                data = open(f, "rb").read()
+                shot = call("POST", "/appScreenshots", {"data": {"type": "appScreenshots", "attributes": {
+                    "fileName": os.path.basename(f), "fileSize": len(data)}, "relationships": {"appScreenshotSet":
+                    {"data": {"type": "appScreenshotSets", "id": sid}}}}})["data"]
+                for op in shot["attributes"]["uploadOperations"]:
+                    part = data[op["offset"]: op["offset"] + op["length"]]
+                    req = urllib.request.Request(op["url"], method=op["method"], data=part,
+                                                 headers={h["name"]: h["value"] for h in op["requestHeaders"]})
+                    urllib.request.urlopen(req, timeout=120).read()
+                call("PATCH", f"/appScreenshots/{shot['id']}", {"data": {"type": "appScreenshots", "id": shot["id"],
+                     "attributes": {"uploaded": True, "sourceFileChecksum": hashlib.md5(data).hexdigest()}}})
+                print(f"  ・{loc}/{os.path.basename(f)}")
+
+        app_info_text()
+        version_text()
+        if holder.get("vl"):
+            screenshots()
 
     @step("提出するビルドの設定（いちばん新しい処理済みのもの）")
     def build():
@@ -165,12 +173,10 @@ def main():
         call("PATCH", f"/appStoreVersions/{version_id}/relationships/build", {"data": {"type": "builds", "id": b["id"]}})
         print(f"  ・ビルド {b['attributes']['version']}")
 
-    app_info_text()
     category()
     copyright_()
-    version_text()
-    if globals().get("version_loc"):
-        screenshots()
+    for loc, m in meta["locales"].items():
+        one_locale(loc, m)
     build()
 
     if problems:

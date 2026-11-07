@@ -1,13 +1,27 @@
 {
-  "locale": "ja",
-  "name": "カロリーごはん帳",
-  "subtitle": "写真でカロリーの目安がわかる",
-  "privacyPolicyUrl": "https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy.html",
-  "supportUrl": "https://github.com/kenjicreate/ka-sniper/issues",
-  "copyright": "2026 kenjicreate",
-  "primaryCategory": "HEALTH_AND_FITNESS",
-  "secondaryCategory": "FOOD_AND_DRINK",
-  "keywords": "カロリー,食事記録,ダイエット,体重,塩分,水分,写真,ごはん,健康,シニア,高齢者,介護,記録",
-  "promotionalText": "食事の写真を撮るだけで、おおよそのカロリーがわかります。文字が大きく、ボタンも少なめ。スマホが苦手な方でも使いやすいアプリです。",
-  "description": "「カロリーごはん帳」は、食事の写真を撮るだけで、おおよそのカロリーがわかる食事記録アプリです。\n文字は大きく、ボタンは少なめ。スマホが苦手な方や、ご年配の方でも「ちょっと触ってみよう」と思えるように作りました。\n\n■ 写真でカロリーの目安\n料理の写真を撮ると、なんの料理かをスマホの中で調べて、カロリーの目安を表示します。量は「小盛り・普通・大盛り」から選ぶだけ。写真は外部に送りません。\n写真を撮り忘れたときは、料理を選ぶか、自分で入力して記録できます。\n\n■ 毎日の記録\n・1日の目標カロリーと、残りのカロリー\n・塩分の目安\n・水分（コップ1杯ずつ）\n・体重とグラフ\n・連続記録日数\n・食事の時間のお知らせ\n\n■ お医者さんの指示にも\n目標カロリーは「自分で決めた」か「医師から指示された」かを分けて記録できます。医師の指示のときは、アプリが勝手に目標を変えることはありません。\n1週間・1か月のまとめは、受診のときに先生に見せたり、印刷したりできます。\n\n■ 家族・ケアマネにも\nご本人が許可した人にだけ、まとめを送れます。\n\n■ いっしょに記録するなかま\n男の人・女の人・くまから選べます。食べすぎた日はお腹パンパン、ちょうど良い日はニコニコ、足りない日はお腹がグ〜。痩せすぎると元気がなくなります。\n\n■ ご注意\n写真や料理表から出すカロリー・塩分は、あくまで目安です。医師から食事の指示を受けている方は、その指示を優先してください。\n\n無料版には広告が表示されます。"
+  "common": {
+    "copyright": "2026 kenjicreate",
+    "primaryCategory": "HEALTH_AND_FITNESS",
+    "secondaryCategory": "FOOD_AND_DRINK"
+  },
+  "locales": {
+    "ja": {
+      "name": "カロリーごはん帳",
+      "subtitle": "写真でカロリーの目安がわかる",
+      "privacyPolicyUrl": "https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy.html",
+      "supportUrl": "https://github.com/kenjicreate/ka-sniper/issues",
+      "keywords": "カロリー,食事記録,ダイエット,体重,塩分,水分,写真,ごはん,健康,シニア,高齢者,介護,記録",
+      "promotionalText": "食事の写真を撮るだけで、おおよそのカロリーがわかります。文字が大きく、ボタンも少なめ。スマホが苦手な方でも使いやすいアプリです。",
+      "description": "「カロリーごはん帳」は、食事の写真を撮るだけで、おおよそのカロリーがわかる食事記録アプリです。\n文字は大きく、ボタンは少なめ。スマホが苦手な方や、ご年配の方でも「ちょっと触ってみよう」と思えるように作りました。\n\n■ 写真でカロリーの目安\n料理の写真を撮ると、なんの料理かをスマホの中で調べて、カロリーの目安を表示します。量は「小盛り・普通・大盛り」から選ぶだけ。写真は外部に送りません。\n写真を撮り忘れたときは、料理を選ぶか、自分で入力して記録できます。\n\n■ 毎日の記録\n・1日の目標カロリーと、残りのカロリー\n・塩分の目安\n・水分（コップ1杯ずつ）\n・体重とグラフ\n・連続記録日数\n・食事の時間のお知らせ\n\n■ お医者さんの指示にも\n目標カロリーは「自分で決めた」か「医師から指示された」かを分けて記録できます。医師の指示のときは、アプリが勝手に目標を変えることはありません。\n1週間・1か月のまとめは、受診のときに先生に見せたり、印刷したりできます。\n\n■ 家族・ケアマネにも\nご本人が許可した人にだけ、まとめを送れます。\n\n■ いっしょに記録するなかま\n男の人・女の人・くまから選べます。食べすぎた日はお腹パンパン、ちょうど良い日はニコニコ、足りない日はお腹がグ〜。痩せすぎると元気がなくなります。\n\n■ ご注意\n写真や料理表から出すカロリー・塩分は、あくまで目安です。医師から食事の指示を受けている方は、その指示を優先してください。\n\n無料版には広告が表示されます。"
+    },
+    "en-US": {
+      "name": "Calorie Diet Log",
+      "subtitle": "Snap a meal, see the calories",
+      "privacyPolicyUrl": "https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy-en.html",
+      "supportUrl": "https://github.com/kenjicreate/ka-sniper/issues",
+      "keywords": "calorie,food log,diet,weight,salt,water,photo,meal,health,senior,elderly,caregiver,tracker",
+      "promotionalText": "Just take a photo of your meal to see a rough calorie count. Big text and few buttons make it easy for anyone, even if smartphones aren't your thing.",
+      "description": "Calorie Diet Log is a simple food diary: take a photo of your meal and see a rough calorie estimate.\nThe text is large and there are only a few buttons, so it's easy to use even if you're not comfortable with smartphones.\n\n■ Calorie estimates from photos\nTake a photo of your dish and the app works out what it is — right on your phone — and shows an estimated calorie count. Just choose Small, Regular or Large. Your photos never leave your phone.\nForgot to take a photo? Pick the dish from a list or type it in.\n\n■ Daily records\n・Daily calorie goal and calories left\n・Salt guide\n・Water (one glass at a time)\n・Weight with a graph\n・Logging streak\n・Mealtime reminders\n\n■ Works with your doctor's advice\nRecord whether your calorie goal is your own or from your doctor. If it's from your doctor, the app never changes it on its own.\nShow your weekly or monthly summary to your doctor at check-ups, or print it.\n\n■ Share with family or carers\nSend your summary only to the people you allow.\n\n■ A food buddy\nChoose a man, a woman or a bear. On days you overeat your buddy looks stuffed, on good days it smiles, and when you haven't eaten enough its tummy rumbles. If you get too thin, it loses its energy.\n\n■ Please note\nCalories and salt from photos and the food list are estimates only. If your doctor has given you dietary advice, please follow it first.\n\nThe free version shows ads."
+    }
+  }
 }

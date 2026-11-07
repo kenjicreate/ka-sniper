@@ -1,0 +1,4 @@
+/* App name and permission messages (English) */
+"CFBundleDisplayName" = "Calorie Diet Log";
+"NSCameraUsageDescription" = "The camera is used to take photos of your meals and estimate their calories.";
+"NSPhotoLibraryUsageDescription" = "Your photos are used to pick a meal photo and estimate its calories.";

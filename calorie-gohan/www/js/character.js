@@ -26,9 +26,9 @@
     const build = opt.build || 1;
     // 体重に合わせて横幅を少しだけ変える（絵がくずれない程度）
     const sx = Math.max(0.88, Math.min(1.15, 1 + (build - 1) * 0.4));
-    let h = `<div class="chara mood-${mood}" role="img" aria-label="${TYPES[t].label}のキャラクター">`;
+    let h = `<div class="chara mood-${mood}" role="img" aria-label="${window.I18N ? I18N.t('chara.label', { name: I18N.t('chara.' + t) }) : TYPES[t].label}">`;
     h += `<img src="img/chara/${t}-${IMG_OF[mood] || 'normal'}.png" alt="" style="transform:scaleX(${sx.toFixed(3)})" draggable="false">`;
-    if (mood === 'hungry') h += '<span class="guu">グ〜</span>';
+    if (mood === 'hungry') h += `<span class="guu">${window.I18N ? I18N.t('chara.growl') : 'グ〜'}</span>`;
     h += '</div>';
     return h;
   }

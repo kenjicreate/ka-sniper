@@ -11,6 +11,7 @@
       saltGoal: 7.0,      // g
       waterGoal: 1500,    // ml
       fontScale: 1,
+      lang: 'auto',       // auto=スマホに合わせる / ja / en
       notify: { on: false, times: ['07:30', '12:00', '18:30'] },
       plan: 'free',
       share: [],          // [{ name, role }] 本人が許可した人
@@ -64,9 +65,5 @@ window.Day = {
     const [y, m, d] = key.split('-').map(Number);
     return Day.key(new Date(y, m - 1, d + n));
   },
-  label(key) {
-    const [y, m, d] = key.split('-').map(Number);
-    const w = '日月火水木金土'[new Date(y, m - 1, d).getDay()];
-    return `${m}月${d}日（${w}）`;
-  },
+  label(key) { return window.I18N ? I18N.dateLabel(key) : key; },
 };
