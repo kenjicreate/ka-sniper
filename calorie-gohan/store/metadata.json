@@ -2,7 +2,8 @@
   "common": {
     "copyright": "2026 kenjicreate",
     "primaryCategory": "HEALTH_AND_FITNESS",
-    "secondaryCategory": "FOOD_AND_DRINK"
+    "secondaryCategory": "FOOD_AND_DRINK",
+    "contentRights": "DOES_NOT_USE_THIRD_PARTY_CONTENT"
   },
   "locales": {
     "ja": {

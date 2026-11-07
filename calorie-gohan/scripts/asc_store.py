@@ -105,6 +105,11 @@ def main():
             rel["secondaryCategory"] = {"data": {"type": "appCategories", "id": common["secondaryCategory"]}}
         call("PATCH", f"/appInfos/{info_id}", {"data": {"type": "appInfos", "id": info_id, "relationships": rel}})
 
+    @step("コンテンツの配信権（他の人の作品は使っていない）")
+    def content_rights():
+        call("PATCH", f"/apps/{app_id}", {"data": {"type": "apps", "id": app_id, "attributes": {
+             "contentRightsDeclaration": common.get("contentRights", "DOES_NOT_USE_THIRD_PARTY_CONTENT")}}})
+
     @step("著作権の表示")
     def copyright_():
         call("PATCH", f"/appStoreVersions/{version_id}", {"data": {"type": "appStoreVersions", "id": version_id,
@@ -128,13 +133,17 @@ def main():
                  "id": holder["vl"], "attributes": {"description": m["description"], "keywords": m["keywords"],
                  "promotionalText": m["promotionalText"], "supportUrl": m["supportUrl"]}}})
 
-        @step(f"[{loc}] スクリーンショット")
-        def screenshots():
+        # 画面の大きさごとの枠：iPhone 6.9インチ（1320×2868）と iPad 13インチ（2048×2732、ファイル名が ipad- で始まるもの）
+        all_files = sorted(glob.glob(os.path.join(STORE, loc, "*.png")))
+        KINDS = {
+            "APP_IPHONE_67": [f for f in all_files if not os.path.basename(f).startswith("ipad-")],
+            "APP_IPAD_PRO_3GEN_129": [f for f in all_files if os.path.basename(f).startswith("ipad-")],
+        }
+
+        def upload_set(kind, files):
             version_loc = holder["vl"]
-            files = sorted(glob.glob(os.path.join(STORE, loc, "*.png")))
             if not files:
-                raise RuntimeError(f"store/{loc}/ にスクリーンショットがありません")
-            kind = "APP_IPHONE_67"  # 6.9インチ（1320×2868）もこの枠
+                raise RuntimeError(f"store/{loc}/ に {kind} 用のスクリーンショットがありません")
             sets = call("GET", f"/appStoreVersionLocalizations/{version_loc}/appScreenshotSets")["data"]
             sid = next((x["id"] for x in sets if x["attributes"]["screenshotDisplayType"] == kind), None)
             if not sid:
@@ -146,7 +155,7 @@ def main():
             want = [(os.path.basename(f), hashlib.md5(open(f, "rb").read()).hexdigest()) for f in files]
             have = [(x.get("attributes", {}).get("fileName"), x.get("attributes", {}).get("sourceFileChecksum")) for x in existing]
             if want == have:
-                print(f"  ・{loc}：同じスクリーンショットが入っているので、そのまま")
+                print(f"  ・{loc} {kind}：同じスクリーンショットが入っているので、そのまま")
                 return
             # 違っていれば、前に入れたものは消して、入れ直す
             for old in existing:
@@ -177,10 +186,19 @@ def main():
             if bad:
                 raise RuntimeError("Apple で処理されなかった画像があります：" + " / ".join(bad))
 
+        @step(f"[{loc}] iPhone のスクリーンショット")
+        def shots_iphone():
+            upload_set("APP_IPHONE_67", KINDS["APP_IPHONE_67"])
+
+        @step(f"[{loc}] iPad のスクリーンショット")
+        def shots_ipad():
+            upload_set("APP_IPAD_PRO_3GEN_129", KINDS["APP_IPAD_PRO_3GEN_129"])
+
         app_info_text()
         version_text()
         if holder.get("vl"):
-            screenshots()
+            shots_iphone()
+            shots_ipad()
 
     @step("提出するビルドの設定（いちばん新しい処理済みのもの）")
     def build():
@@ -195,6 +213,7 @@ def main():
         print(f"  ・ビルド {b['attributes']['version']}")
 
     category()
+    content_rights()
     copyright_()
     for loc, m in meta["locales"].items():
         one_locale(loc, m)
