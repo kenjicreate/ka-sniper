@@ -23,9 +23,9 @@ GitHub の Actions →「カロリーごはん帳をAppleに送る」→ Run wor
 - 広告の場所と出すルール（下の細い広告／画面いっぱいは記録後・まとめを開いた時だけ、1日1回）
 
 ## App Store への提出
-- 掲載情報（説明文・キーワード等）：、スクリーンショット：（6.9インチ、1320×2868）
+- 掲載情報（説明文・キーワード等）：`store/metadata.json`、スクリーンショット：`store/*.png`（6.9インチ、1320×2868）
 - GitHub の Actions「カロリーごはん帳の掲載情報をAppleに送る」で、文章・スクリーンショット・ビルドを App Store Connect に自動で入れる
-- プライバシーポリシー：（main に入ると https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy.html で公開）
+- プライバシーポリシー：`privacy.html`（main に入ると https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy.html で公開）
 - App Store Connect の画面でやること：App のプライバシー、価格（無料）、年齢制限、審査用の連絡先、「審査に提出」
 
 ## これから
