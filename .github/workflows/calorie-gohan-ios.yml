@@ -61,6 +61,12 @@ jobs:
           </plist>
           PLIST
 
+      - name: Apple 側の準備（バンドルIDの登録・アプリ登録の確認）
+        run: |
+          python3 -m venv "$RUNNER_TEMP/asc"
+          "$RUNNER_TEMP/asc/bin/pip" install -q pyjwt cryptography
+          "$RUNNER_TEMP/asc/bin/python" scripts/asc_prepare.py
+
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
