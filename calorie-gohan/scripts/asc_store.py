@@ -181,8 +181,9 @@ def main():
                 if all(st.get("state") in ("COMPLETE", "FAILED") for _, st in states):
                     break
                 time.sleep(5)
-            bad = [f"{n}: {st.get('state')} {st.get('errors')}" for n, st in states if st.get("state") != "COMPLETE"]
-            print(f"  → Apple 側の枠 {kind} に {len(states)} 枚。処理済み {len(states) - len(bad)} 枚")
+            bad = [f"{n}: {st.get('state')} {st.get('errors')}" for n, st in states if st.get("state") == "FAILED"]
+            done = sum(1 for _, st in states if st.get("state") == "COMPLETE")
+            print(f"  → Apple 側の枠 {kind} に {len(states)} 枚。処理済み {done} 枚（残りは Apple で処理中）")
             if bad:
                 raise RuntimeError("Apple で処理されなかった画像があります：" + " / ".join(bad))
 
@@ -226,8 +227,9 @@ def main():
             if not vls:
                 print(f"  ・{loc}：言語がありません"); continue
             for st in call("GET", f"/appStoreVersionLocalizations/{vls[0]['id']}/appScreenshotSets")["data"]:
-                n = len(call("GET", f"/appScreenshotSets/{st['id']}/appScreenshots")["data"])
-                print(f"  ・{loc}：{st['attributes']['screenshotDisplayType']} に {n} 枚")
+                shots = call("GET", f"/appScreenshotSets/{st['id']}/appScreenshots")["data"]
+                done = sum(1 for x in shots if (x["attributes"].get("assetDeliveryState") or {}).get("state") == "COMPLETE")
+                print(f"  ・{loc}：{st['attributes']['screenshotDisplayType']} に {len(shots)} 枚（処理済み {done} 枚）")
     report()
 
     if problems:
