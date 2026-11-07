@@ -22,6 +22,12 @@ GitHub の Actions →「カロリーごはん帳をAppleに送る」→ Run wor
 - 文字の大きさ3段階、食事の時間のお知らせ（アプリ版）
 - 広告の場所と出すルール（下の細い広告／画面いっぱいは記録後・まとめを開いた時だけ、1日1回）
 
+## App Store への提出
+- 掲載情報（説明文・キーワード等）：、スクリーンショット：（6.9インチ、1320×2868）
+- GitHub の Actions「カロリーごはん帳の掲載情報をAppleに送る」で、文章・スクリーンショット・ビルドを App Store Connect に自動で入れる
+- プライバシーポリシー：（main に入ると https://kenjicreate.github.io/ka-sniper/calorie-gohan/privacy.html で公開）
+- App Store Connect の画面でやること：App のプライバシー、価格（無料）、年齢制限、審査用の連絡先、「審査に提出」
+
 ## これから
 - **写真の判定**：料理表にない料理は「選んでもらう」形。料理表に料理を増やす時は `www/js/foods.js` の `aiy` に判定データ側の料理名（`www/models/food/labels.txt`）を書く。1枚に複数の料理がある時（定食など）は、いまは1品ずつ記録
 - **AdMob**：いまは広告の場所だけ（`www/js/ads.js`）。AdMob の部品を入れ、テスト用の番号を自分の番号へ差し替える。

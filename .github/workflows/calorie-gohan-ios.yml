@@ -8,6 +8,10 @@ on:
     branches: [claude/calorie-gohan-spec-prhg0e]
     paths:
       - 'calorie-gohan/**'
+      - '!calorie-gohan/store/**'
+      - '!calorie-gohan/privacy.html'
+      - '!calorie-gohan/scripts/asc_store.py'
+      - '!calorie-gohan/README.md'
       - '.github/workflows/calorie-gohan-ios.yml'
 
 jobs:
