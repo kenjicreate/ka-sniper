@@ -30,7 +30,7 @@ GitHub の Actions →「カロリーごはん帳をAppleに送る」→ Run wor
 
 ## これから
 - **写真の判定**：料理表にない料理は「選んでもらう」形。料理表に料理を増やす時は `www/js/foods.js` の `aiy` に判定データ側の料理名（`www/models/food/labels.txt`）を書く。1枚に複数の料理がある時（定食など）は、いまは1品ずつ記録
-- **AdMob**：いまは広告の場所だけ（`www/js/ads.js`）。AdMob の部品を入れ、テスト用の番号を自分の番号へ差し替える。
+- **AdMob**：本物の番号を設定済み（アプリID は `ios/App/App/Info.plist`、広告ユニットは `www/js/ads.js`）。App Store に出たら、AdMob の画面でアプリをストアにつなぐ。
 - **有料版**：外部AI（Geminiなど）での判定・月額課金・利用回数の上限（入り口は `www/js/recognize.js`）。
 - **共有**：いまは「本人が送る」方式。家族がいつでも見られる形にするには、データを置く場所（サーバー）が必要。
 - **Android 版**：`npx cap add android` で追加できる作りです。
