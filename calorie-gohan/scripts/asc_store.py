@@ -154,7 +154,9 @@ def main():
             existing = call("GET", f"/appScreenshotSets/{sid}/appScreenshots")["data"]
             want = [(os.path.basename(f), hashlib.md5(open(f, "rb").read()).hexdigest()) for f in files]
             have = [(x.get("attributes", {}).get("fileName"), x.get("attributes", {}).get("sourceFileChecksum")) for x in existing]
-            if want == have:
+            # （Apple の処理が終わるまでは checksum が空のことがあるので、その時は名前だけで比べる）
+            same = len(want) == len(have) and all(w[0] == h[0] and (h[1] is None or w[1] == h[1]) for w, h in zip(want, have))
+            if same:
                 print(f"  ・{loc} {kind}：同じスクリーンショットが入っているので、そのまま")
                 return
             # 違っていれば、前に入れたものは消して、入れ直す
