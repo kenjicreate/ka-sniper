@@ -1,20 +1,45 @@
 // 広告（無料版のみ）
-// アプリ版では AdMob の部品（@capacitor-community/admob）があれば本物の広告を出す。
+// アプリ版では AdMob（@capacitor-community/admob）で本物の広告を出す。
 // ブラウザで見ているときは、広告の場所だけ表示する。
 (function () {
-  // いまは Google が用意している「テスト用」の広告番号。公開前に自分の番号へ差し替える。
+  // ▼ AdMob の広告ユニット番号（AdMob の管理画面で作ったもの）
+  //   まだ番号がないときは Google のテスト用番号（本物の広告は出ない・収益なし）
   const IDS = {
-    banner: 'ca-app-pub-3940256099942544/2934735716',
-    interstitial: 'ca-app-pub-3940256099942544/4411468910',
+    banner: 'ca-app-pub-3940256099942544/2934735716',       // 画面下の細い広告（バナー）
+    interstitial: 'ca-app-pub-3940256099942544/4411468910', // 画面いっぱいの広告（インタースティシャル）
   };
+  const TESTING = IDS.banner.startsWith('ca-app-pub-3940256099942544');
+
+  // 画面いっぱいの広告を出してよい画面（入力の途中や写真を撮る前には出さない）
+  const FULL_OK_SCREENS = ['home', 'summary'];
+
   const plugin = () => window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.AdMob;
   const isFree = () => window.Store.d.settings.plan !== 'paid';
-  let ready = false;
+  let ready = false;       // AdMob の準備ができた
+  let fullReady = false;   // 画面いっぱいの広告を読みこみ済み
+  let fullLoading = false;
+  let bannerShown = false;
 
   async function init() {
     const p = plugin();
     if (!p || !isFree()) return;
-    try { await p.initialize({}); ready = true; } catch (e) { console.warn(e); }
+    try {
+      await p.initialize({ initializeForTesting: TESTING });
+      ready = true;
+      p.addListener('interstitialAdDismissed', () => { fullReady = false; preloadFull(); });
+      p.addListener('interstitialAdFailedToShow', () => { fullReady = false; preloadFull(); });
+      preloadFull();
+    } catch (e) { console.warn(e); }
+  }
+
+  // 画面いっぱいの広告を先に読みこんでおく（出すときに待たせない・入力中に割りこまない）
+  async function preloadFull() {
+    const p = plugin();
+    if (!p || !ready || fullReady || fullLoading || !isFree()) return;
+    fullLoading = true;
+    try { await p.prepareInterstitial({ adId: IDS.interstitial, isTesting: TESTING }); fullReady = true; }
+    catch (e) { fullReady = false; }
+    fullLoading = false;
   }
 
   // 画面の下の細い広告
@@ -24,16 +49,15 @@
     const on = isFree() && window.Store.d.setup;
     el.hidden = !on;
     document.body.classList.toggle('has-ad', on);
-    if (!on) { hideBanner(); return; }
     const p = plugin();
-    if (p && ready) {
-      el.classList.add('native');
-      try { await p.showBanner({ adId: IDS.banner, adSize: 'BANNER', position: 'BOTTOM_CENTER', margin: 0 }); } catch (e) {}
-    }
-  }
-  async function hideBanner() {
-    const p = plugin();
-    if (p && ready) try { await p.hideBanner(); } catch (e) {}
+    if (!p || !ready) return;
+    if (!on) { if (bannerShown) { try { await p.hideBanner(); } catch (e) {} } return; }
+    el.classList.add('native');
+    try {
+      if (bannerShown) await p.resumeBanner();
+      else await p.showBanner({ adId: IDS.banner, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 0, isTesting: TESTING });
+      bannerShown = true;
+    } catch (e) { console.warn(e); }
   }
 
   // 画面いっぱいの広告：1日1回まで。
@@ -43,16 +67,15 @@
     const d = window.Store.d;
     const today = window.Day.key();
     if (d.ads.lastFull === today) return false;
-    d.ads.lastFull = today;
-    window.Store.save();
+    const screen = window.App && window.App.state.screen;
+    if (!FULL_OK_SCREENS.includes(screen)) return false;
     const p = plugin();
-    if (p && ready) {
-      try {
-        await p.prepareInterstitial({ adId: IDS.interstitial });
-        await p.showInterstitial();
-        return true;
-      } catch (e) { return false; }
+    if (p) {
+      if (!ready || !fullReady) { preloadFull(); return false; } // 読みこめていなければ今日は出さない（次の機会に）
+      d.ads.lastFull = today; window.Store.save();
+      try { await p.showInterstitial(); return true; } catch (e) { return false; }
     }
+    d.ads.lastFull = today; window.Store.save();
     return showMock();
   }
 
@@ -67,5 +90,5 @@
     });
   }
 
-  window.Ads = { init, showBanner, hideBanner, maybeFullScreen };
+  window.Ads = { init, showBanner, maybeFullScreen, TESTING };
 })();

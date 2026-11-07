@@ -8,6 +8,7 @@
     "open:android": "cap open android"
   },
   "dependencies": {
+    "@capacitor-community/admob": "^8.3.0",
     "@capacitor/core": "^8.6.0",
     "@capacitor/ios": "^8.6.0",
     "@capacitor/local-notifications": "^8.0.0",
