@@ -239,8 +239,11 @@
       h += `<h2>${t('photo.guess')}</h2>${p.results.map((r) => foodBtn(r.food)).join('')}
         <button class="btn-sub" data-act="manualFromPhoto">${t('photo.other')}</button>`;
     } else {
+      const inf = Recognizer.info;
       h += `<div class="notice">${t('photo.unknown')}</div>
-        <button data-act="manualFromPhoto">${t('photo.pick')}</button>`;
+        <button data-act="manualFromPhoto">${t('photo.pick')}</button>
+        <details class="muted"><summary>${t('photo.details')}</summary>
+          <p>${esc(inf.error || (inf.raw.length ? inf.raw.join(' / ') : '-'))}</p></details>`;
     }
     h += `<p class="notice">${t('photo.estimate')}</p>`;
     return h;

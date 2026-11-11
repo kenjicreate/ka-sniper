@@ -7,6 +7,8 @@
   const SIZE = 192;        // 判定データが受け取る写真の大きさ
   const MIN_SCORE = 0.03;  // これより自信がない候補は出さない
   let engine = null;
+  // 直前の判定のようす（うまくいかない時に画面で確かめるため）
+  const info = { step: '', error: '', raw: [] };
   let preparing = null;
 
   function loadScript(src) {
@@ -37,7 +39,8 @@
       tflite.loadTFLiteModel('models/food/aiy_food_V1.tflite'),
       fetch('models/food/labels.txt').then((r) => r.text()),
     ]);
-    const toFood = buildMap(text.split('\n').map((s) => s.trim()));
+    const labels = text.split('\n').map((s) => s.trim());
+    const toFood = buildMap(labels);
     return {
       async classify(img) {
         // 真ん中を正方形に切り取り、192×192 に縮める
@@ -52,6 +55,8 @@
         // 自信の高い順に、料理表にある料理だけを拾う（同じ料理は1回だけ）
         const order = Array.from(scores.keys()).sort((a, b) => scores[b] - scores[a]).slice(0, 40);
         const found = new Map();
+        // うまくいかない時の調べもの用：判定データがそのまま出した上位3つ
+        info.raw = order.slice(0, 3).map((i) => `${labels[i]} ${Math.round((scores[i] / 255) * 100)}%`);
         for (const i of order) {
           const id = toFood[i];
           const sc = scores[i] / 255;
@@ -74,9 +79,12 @@
     if (s.plan === 'paid') {
       // 有料版はここで外部AIを呼ぶ予定（月の上限回数つき）。いまは未実装なので無料版の判定を使う。
     }
+    info.step = '準備'; info.error = ''; info.raw = [];
     try {
-      const e = await withTimeout(prepare(), 30000);
-      const r = await withTimeout(e.classify(img), 15000);
+      const e = await withTimeout(prepare(), 60000);
+      info.step = '判定';
+      const r = await withTimeout(e.classify(img), 20000);
+      info.step = '完了';
       const byId = (id) => window.FOODS.find((f) => f.id === id);
       const list = r.map((x) => ({ food: byId(x.id), score: x.score })).filter((x) => x.food);
       // 1位の料理と見た目が似ている料理（うどんとそば、寿司とさしみ等）を2番目に入れる
@@ -88,9 +96,10 @@
       return list.filter((x) => !seen.has(x.food.id) && seen.add(x.food.id)).slice(0, 3);
     } catch (err) {
       console.warn('判定できませんでした', err);
+      info.error = `${info.step}: ${err && (err.message || err)}`;
       return [];
     }
   }
 
-  window.Recognizer = { recognize, prepare };
+  window.Recognizer = { recognize, prepare, info };
 })();

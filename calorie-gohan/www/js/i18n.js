@@ -58,6 +58,7 @@
       'photo.other': 'ちがう料理を選ぶ',
       'photo.unknown': 'ごめんね、うまく分からなかったよ。<br>下のボタンから料理を選んでね。',
       'photo.pick': '料理を選ぶ',
+      'photo.details': 'くわしい情報',
       'photo.estimate': '※ 写真から出すカロリーは<br>あくまで目安です。',
 
       'manual.title': '料理を選ぶ',
@@ -262,6 +263,7 @@
       'photo.other': 'Pick a different dish',
       'photo.unknown': "Sorry, I couldn't tell what this is.<br>Please pick the dish below.",
       'photo.pick': 'Pick a dish',
+      'photo.details': 'Details',
       'photo.estimate': '* Calories from photos are<br>estimates only.',
 
       'manual.title': 'Pick a dish',
