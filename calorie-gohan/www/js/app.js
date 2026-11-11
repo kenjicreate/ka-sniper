@@ -472,9 +472,7 @@
       <div class="row"><button data-act="notify" data-v="1" class="${s.notify.on ? '' : 'btn-sub'}">${t('set.notifyOn')}</button><button data-act="notify" data-v="0" class="${s.notify.on ? 'btn-sub' : ''}">${t('set.notifyOff')}</button></div>
       ${meals.map((l, i) => `<label for="t${i}">${l}</label><input id="t${i}" type="time" value="${s.notify.times[i]}">`).join('')}
       <button data-act="saveSettings">${t('set.save')}</button>
-      <h2>${t('set.plan')}</h2>
-      <div class="card"><p>${t('set.planNow', { plan: t(s.plan === 'paid' ? 'set.paid' : 'set.free') })}</p>
-        <p class="muted">${t('set.planNote')}</p></div>
+      ${''/* 有料版の案内は、有料版（アプリ内課金）ができてから出す。準備中の案内は審査で問題になるため */}
       <h2>${t('set.data')}</h2>
       <button class="btn-danger" data-act="reset">${t('set.reset')}</button>`;
   };

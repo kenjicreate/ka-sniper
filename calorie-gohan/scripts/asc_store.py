@@ -110,6 +110,20 @@ def main():
         call("PATCH", f"/apps/{app_id}", {"data": {"type": "apps", "id": app_id, "attributes": {
              "contentRightsDeclaration": common.get("contentRights", "DOES_NOT_USE_THIRD_PARTY_CONTENT")}}})
 
+    @step("審査用メモ（App Review に関する情報）")
+    def review_notes():
+        if not common.get("reviewNotes"):
+            return
+        r = call("GET", f"/appStoreVersions/{version_id}/appStoreReviewDetail", ok_missing=True)
+        if r and r.get("data"):
+            rid = r["data"]["id"]
+            call("PATCH", f"/appStoreReviewDetails/{rid}", {"data": {"type": "appStoreReviewDetails", "id": rid,
+                 "attributes": {"notes": common["reviewNotes"], "demoAccountRequired": False}}})
+        else:
+            call("POST", "/appStoreReviewDetails", {"data": {"type": "appStoreReviewDetails",
+                 "attributes": {"notes": common["reviewNotes"], "demoAccountRequired": False},
+                 "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}})
+
     @step("著作権の表示")
     def copyright_():
         call("PATCH", f"/appStoreVersions/{version_id}", {"data": {"type": "appStoreVersions", "id": version_id,
@@ -218,6 +232,7 @@ def main():
     category()
     content_rights()
     copyright_()
+    review_notes()
     for loc, m in meta["locales"].items():
         one_locale(loc, m)
     build()
